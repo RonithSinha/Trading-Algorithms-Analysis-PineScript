@@ -1,0 +1,53 @@
+//@version=4
+strategy("High Low Break Strategy",initial_capital=100000,overlay=true)
+
+sma5= ema(close,5)
+sma8= ema(close,8)
+sma13=ema(close,13)
+sma20=ema(close,20)
+sma50= ema(close,50)
+sma100=ema(close,100)
+sma200=ema(close,200)
+
+
+plot(sma5,color=color.green)
+plot(sma8)
+plot(sma13)
+plot(sma20)
+plot(sma50)
+plot(sma100)
+plot(sma200)
+
+
+forceExit=hour>=15
+noEntry=hour<9
+if(forceExit)
+    strategy.close_all(comment="Exit All")
+
+// long=high>high[1] and low>low[1] and high[1]<high[2] and low[1]<low[2] and close>sma5 and close>sma8 and close>sma13 and close>sma20 and close>sma50 and close>sma100 and close>sma200 and (not forceExit) and (not noEntry)
+// short=low<low[1] and high<high[1] and low[1]>low[2] and high[1]>high[2] and close<sma5 and close<sma8 and close<sma13 and close<sma20 and close<sma50 and close<sma100 and close<sma200 and (not forceExit) and (not noEntry)
+
+// long=high>high[1] and low>low[1] and high[1]<high[2] and low[1]<low[2] and close>sma5 and close>sma8 and close>sma13 and close>sma20 and (not forceExit) and (not noEntry)
+// short=low<low[1] and high<high[1] and low[1]>low[2] and high[1]>high[2] and close<sma5 and close<sma8 and close<sma13 and close<sma20 and (not forceExit) and (not noEntry)
+
+long=high>high[1] and low>low[1] and close>sma5 and close>sma8 and close>sma13 and close>sma20 and close>sma50 and close>sma100 and close>sma200 and (not forceExit) and (not noEntry)
+short=low<low[1] and high<high[1] and close<sma5 and close<sma8 and close<sma13 and close<sma20 and close<sma50 and close<sma100 and close<sma200 and (not forceExit) and (not noEntry)
+
+ATR=atr(14)
+risk=1.5*ATR
+longClose=low<low[1] or forceExit
+shortClose=high>high[1] or forceExit
+
+quantity=(strategy.initial_capital*0.02)/risk
+
+if(long and strategy.opentrades==0)
+    strategy.entry("LE",strategy.long,quantity)
+    strategy.exit("LX","LE",stop=low[1])
+    
+if(short and strategy.opentrades==0)
+    strategy.entry("SE",strategy.short,quantity)
+    strategy.exit("SX","SE",stop=high[1])
+    
+
+strategy.close("LE",when=longClose,comment=" ")
+strategy.close("SE",when=shortClose,comment=" ")
