@@ -1,0 +1,61 @@
+//@version=5
+strategy("MA Crossover - Swing",initial_capital=100000,overlay=true)
+
+sma5= ta.ema(close,5)
+sma8= ta.ema(close,8)
+sma13=ta.ema(close,13)
+sma20=ta.ema(close,20)
+sma50=ta.ema(close,50)
+sma100=ta.ema(close,100)
+sma200=ta.ema(close,200)
+
+atrLength=input.int(defval=14,title="ATR")
+ATR=ta.atr(atrLength)
+
+// plot(sma5,color=color.white,linewidth=1)
+// plot(sma8,color=color.blue,linewidth=1)
+// plot(sma13,color=color.blue,linewidth=1)
+plot(sma20,color=color.blue,linewidth=1)
+plot(sma50,color=color.red,linewidth=1)
+plot(sma100,color=color.red,linewidth=1)
+plot(sma200,color=color.red,linewidth=1)
+// plot(ATR,color=color.yellow,linewidth=5)
+
+risk=1.5*ATR
+
+long=(ta.crossover(sma5,sma8) or ta.crossover(sma5,sma13)) and sma20>sma200 and sma20>sma100
+short=(ta.crossunder(sma5,sma8) or ta.crossunder(sma5,sma13)) and sma5<sma20
+
+//Alternate exit indicator
+atrPeriod = input.int(10, "ATR Length")
+factor = input.float(2.0, "Factor", step = 0.01)
+
+[_, direction] = ta.supertrend(factor, atrPeriod)
+
+longCloseST =  ta.change(direction) > 0
+
+longClose=close<sma20 or sma5<sma8 or sma5<sma13 or sma5<sma20 or close[2]-close>risk or close[1]-close>risk
+shortClose=sma5>sma8 or sma5>sma13 or sma5>sma20 or close-close[2]>risk or close-close[1]>risk
+
+percentCaptialRisked=input.int(title="Percentage of Capital to be risked per trade",defval=2)
+quantity=(strategy.initial_capital*percentCaptialRisked/100)/risk
+
+dynSLpoints(factor) => factor * ta.atr(14) / syminfo.mintick
+
+stopLossRiskMultiplier=input.int(title="Stop Loss Risk Multiplier",defval=1)
+if(long and strategy.opentrades==0)
+    strategy.entry("LE",strategy.long,quantity)
+    // strategy.exit("LX","LE",stop=close-stopLossRiskMultiplier*risk)
+
+strategy.exit("SL/TP", loss = dynSLpoints(2), trail_points = dynSLpoints(5), trail_offset = dynSLpoints(2))
+
+// if(short and strategy.opentrades==0)
+//     strategy.entry("SE",strategy.short,quantity)
+//     strategy.exit("SX","SE",stop=close+stopLossRiskMultiplier*risk)
+
+longExitCondition = longClose or longCloseST
+if(longExitCondition and strategy.opentrades>0)
+    strategy.close("LE",comment="LC")
+strategy.close("SE",when=shortClose,comment="SC")
+
+// strategy.exit("SL/TP", loss = dynSLpoints(3), trail_points = dynSLpoints(5), trail_offset = dynSLpoints(2))
